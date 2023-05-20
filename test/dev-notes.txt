@@ -1,0 +1,79 @@
+// To give an idea of what/how to test ....
+
+let [deployer, anybody] = await ethers.getSigners()
+let getRandomByteStr = (length) => ethers.utils.randomBytes(length).reduce((a, b) => a+("0"+b.toString(16)).slice(-2), '0x')
+
+// "Deploy" deterministic-deployer-proxy to the local hardhat network
+await network.provider.send("hardhat_setCode", [
+    "0x4e59b44847b379578588920cA78FbF26c0B4956C",
+    "0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe03601600081602082378035828234f58015156039578182fd5b8082525050506014600cf3"
+])
+// Test deterministic-deployer-proxy to the local hardhat network
+let dataPrefix = '0x0c3d72390ac0ce0233c551a3c5278f8625ba996f5985dc8d612a9fc55f1de15a600b5981380380925939f3'
+let content = getRandomByteStr(16*32) // 16 x 32-byte words
+let callData = dataPrefix + content.replace('0x', '')
+pointer =  await deployer.call({to: "0x4e59b44847b379578588920cA78FbF26c0B4956C", data: callData})
+let tx0 = await deployer.sendTransaction({to: "0x4e59b44847b379578588920cA78FbF26c0B4956C", data: callData})
+assert(await ethers.provider.getCode(pointer) == content)
+await tx0.wait().then(rcp => rcp.gasUsed.toNumber()) // 164695
+
+let Tester = await ethers.getContractFactory('D11cSSTORE2Tester', deployer)
+let tester = await Tester.deploy()
+
+content = getRandomByteStr(16*32)
+assert(await tester.testGetInitCode(content) == '0x600b5981380380925939f300' + content.replace('0x', ''))
+
+let resp = await deployer.call({to: tester.address, data: Tester.interface.encodeFunctionData('testWrite(bytes)', [content])})
+[pointer] = ethers.utils.defaultAbiCoder.decode(['address'], resp)
+let pointer2 = await tester.testGetDataAddress(content)
+assert(pointer == pointer2)
+
+let tx1 = await tester.testWrite(content)
+let rcp1 = await tx1.wait()
+rcp1.gasUsed.toNumber() // 174412 (+3.4k)
+
+assert(await tester.testRead(pointer) == content)
+assert(await tester.testReadFromTo(pointer, 0, 3) == content.substr(0, 8))
+assert(await tester.testReadFromTo(pointer, 3, (content.length-2)/2) ==  "0x" + content.substr(8,))
+
+let tx2 = await deployer.sendTransaction({to: tester.address, value: 0, data: Tester.interface.encodeFunctionData('testRead(address)', [pointer])})
+await tx2.wait().then(rcp => rcp.gasUsed.toNumber()) // 26872 (+700)
+
+let Tester2 = await ethers.getContractFactory('D11cSSTORE2UintArrayTester', deployer)
+let tester2 = await Tester2.deploy()
+
+content = Array(127).fill(0).map( (_) => getRandomByteStr(32))
+let encodedContent = ethers.utils.defaultAbiCoder.encode(['bytes32[]'], [content])
+
+resp = await deployer.call({to: tester2.address, data: Tester2.interface.encodeFunctionData('writeAsUintArray(uint256[])', [content])})
+[pointer] = ethers.utils.defaultAbiCoder.decode(['address'], resp)
+let tx5 = await tester2.writeAsUintArray(content)
+await tx5.wait().then(rcp => rcp.gasUsed.toNumber()) // 1046910 (+54k)
+
+let loadedContent = await tester2.readAsUintArray(pointer)
+let isSame = loadedContent.reduce((acc, lc, i) => acc && (lc.toHexString() == content[i].toString(16)), loadedContent.length == content.length)
+assert(isSame)
+
+let tx6 = await deployer.sendTransaction({to: tester2.address, value: 0, data: Tester2.interface.encodeFunctionData('readAsUintArray(address)', [pointer])})
+await tx6.wait().then(rcp => rcp.gasUsed.toNumber()) // 90076 (+52k)
+
+let constructor2 = '0x323d55600e3d81380380923d39f3'
+let deployedCodeHeader2 = '0x333d5403600c573d805533ff5b00'
+data = getRandomByteStr(128)
+deployedCode = ethers.utils.solidityPack(['bytes', 'bytes'], [deployedCodeHeader2, data])
+initCode = ethers.utils.solidityPack(['bytes', 'bytes'], [constructor2, deployedCode])
+salt = getRandomByteStr(32)
+callData = ethers.utils.solidityPack(['bytes', 'bytes'], [salt, initCode])
+pointer =  await deployer.call({to: "0x4e59b44847b379578588920cA78FbF26c0B4956C", data: callData})
+let tx8 = await deployer.sendTransaction({to: "0x4e59b44847b379578588920cA78FbF26c0B4956C", data: callData})
+assert(ethers.utils.defaultAbiCoder.decode(['address'], await ethers.provider.getStorageAt(pointer, 0))[0] == deployer.address)
+assert(await ethers.provider.getCode(pointer) == deployedCode)
+(await tx8.wait()).gasUsed.toNumber() // 106683
+let tx12 = await deployer.sendTransaction({to: tester.address, value: 0, data: Tester.interface.encodeFunctionData('testRead(address)', [pointer])})
+await tx12.wait().then(rcp => rcp.gasUsed.toNumber()) // 25376
+assert(await tester.testRead(pointer) == '0x' + deployedCode.replace('0x', '').substr(2))
+let tx9 = await anybody.sendTransaction({to: pointer})
+assert(await ethers.provider.getCode(pointer) == deployedCode)
+let tx10 = await deployer.sendTransaction({to: pointer})
+assert(await ethers.provider.getCode(pointer) == '0x')
+(await tx10.wait()).gasUsed.toNumber() // 26227
