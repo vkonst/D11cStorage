@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Unlicense
+// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity >=0.8.0;
 
 import "./core/BytecodeReader.sol";
@@ -15,7 +15,7 @@ abstract contract D11cRemovableReader is BytecodeReader {
     // Data in the deployed bytecode follows the HEADER the D11cRemovableStore2 uses
     uint256 private constant DATA_OFFSET = 14;
 
-    function _getDataOffset() internal pure override returns(uint256) {
+    function _getDataOffset() internal pure override returns (uint256) {
         return DATA_OFFSET;
     }
 }

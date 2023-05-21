@@ -1,7 +1,7 @@
 {
   "name": "D11cStorage",
   "version": "0.0.0",
-  "license": "Unlicence",
+  "license": "AGPL-3.0-only",
   "main": "index.js",
   "scripts": {
     "clean": "hardhat clean",

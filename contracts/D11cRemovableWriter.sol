@@ -1,15 +1,14 @@
-// SPDX-License-Identifier: Unlicense
+// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity >=0.8.0;
 
 import "./core/D11cBytecodeWriter.sol";
 
 /**
- * @notice Deploy immutable data as bytecode at a deterministic (abbreviated as "D11c") address
- * rather than store data into contract storage to save gas cost.
- * The EoA that deploys data may permanently remove (but not update) it.
+ * @notice Deploy immutable data as bytecode at a deterministic (abbreviated as "D11c") address.
+ * It may save gas cost writing/reading to/from the contract storage would take.
+ * The EoA that deploys data (the "owner") may remove (but not update) the data.
  * @author vkonst (https://github.com/vkonst/D11cSstore2)
- * @author Reworked from Solmate (https://github.com/transmissions11/solmate/blob/main/src/utils/SSTORE2.sol)
- * @author Originated from 0xSequence (https://github.com/0xSequence/sstore2/blob/master/contracts/SSTORE2.sol)
+ * @author Originated from Solmate (https://github.com/transmissions11/solmate/blob/main/src/utils/SSTORE2.sol)
  * @dev Data is written as via CREATE2 and read via EXTCODECOPY opcodes.
  * The deployed data address on any network is deterministically defined by the data only.
  * Unlike the original SSTORE2 library, data gets deployed:
@@ -22,8 +21,8 @@ import "./core/D11cBytecodeWriter.sol";
  */
 abstract contract D11cRemovableWriter is D11cBytecodeWriter {
     /**
-     * @dev When called as a "constructor", it stores `msg.origin` into the slot 0 of the contract
-     * being instantiated and returns the rest of the "init code" skipping 14 bytes of itself.
+     * @dev When called as the CONSTRUCTOR, it stores `msg.origin` ("owner") to the storage slot 0
+     * of the new "contract" and returns the rest of the "init code" skipping 14 bytes of itself.
      * | Bytecode | Mnemonic       | Stack View               // Comments                          |
      * |----------|----------------|---------------------------------------------------------------|
      * | 0x32     | ORIGIN         | origin                   // msg.origin                        |
@@ -39,12 +38,9 @@ abstract contract D11cRemovableWriter is D11cBytecodeWriter {
      * | 0x3d     | RETURNDATASIZE | 0 codeOffset (codeSize - codeOffset) 0 (codeSize - codeOffset)|
      * | 0x39     | CODECOPY       | 0 (codeSize - codeOffset) // Skip this constructor bytecode   |
      * | 0xf3     | RETURN         |                          // Return the rest of the init code  |
-     */
-    uint112 constant private CONSTRUCTOR = 0x323d55600e3d81380380923d39f3;
-
-    /**
-     * @dev The deployed code shall start with this bytecode. Being called by the `owner` (stored at
-     * the storage in the slot 0), this code executes SELFDESTRUCT opcode.
+     *
+     * @dev Deployed bytecode starts with this HEADER. Being called by the address stored in the
+     * storage slot 0 (the "owner"), this code executes SELFDESTRUCT opcode.
      * | bytecode | mnemonic       | stack view               // comments                          |
      * |----------|----------------|---------------------------------------------------------------|
      * | 0x33     | CALLER         | caller                   // memorize msg.sender               |
@@ -61,11 +57,12 @@ abstract contract D11cRemovableWriter is D11cBytecodeWriter {
      * | 0x5b     | JUMPDEST       | -                        // the end                           |
      * | 0x00     | STOP           | -                        // reverts execution after this point|
      */
-    uint112 constant private HEADER = 0x333d5403600c573d805533ff5b00;
+    uint224 private constant CONSTRUCTOR_AND_HEADER =
+        0x323d55600e3d81380380923d39f3333d5403600c573d805533ff5b00;
 
     function getInitCode(
         bytes memory data
-    ) internal pure override returns(bytes memory initCode) {
-        initCode = abi.encodePacked(CONSTRUCTOR, HEADER, data);
+    ) internal pure override returns (bytes memory initCode) {
+        initCode = abi.encodePacked(CONSTRUCTOR_AND_HEADER, data);
     }
 }

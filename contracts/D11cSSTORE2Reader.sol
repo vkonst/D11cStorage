@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Unlicense
+// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity >=0.8.0;
 
 import "./core/BytecodeReader.sol";
@@ -15,7 +15,7 @@ abstract contract D11cSSTORE2Reader is BytecodeReader {
     // Data in the deployed bytecode follows one-byte STOP opcode that reverts calls
     uint256 private constant DATA_OFFSET = 1;
 
-    function _getDataOffset() internal pure override returns(uint256) {
+    function _getDataOffset() internal pure override returns (uint256) {
         return DATA_OFFSET;
     }
 }
