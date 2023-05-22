@@ -3,7 +3,7 @@ pragma solidity >=0.8.0;
 
 /**
  * @notice Write data as deployed bytecode to a deterministic (abbreviated as "D11c") address.
- * @author vkonst (https://github.com/vkonst/D11cSstore2)
+ * @author vkonst (https://github.com/vkonst/D11cStorage)
  * @dev It deploys data via the deterministic-deployment-proxy. The deployment address on any
  * EVM-based network is deterministically defined by the data itself and known before deployment.
  * The deterministic-deployment-proxy has the same address on all EVM-based networks (anyone may

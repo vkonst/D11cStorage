@@ -6,7 +6,7 @@ import "./core/BytecodeReader.sol";
 /**
  * @notice Read immutable (but destructible) data stored as deployed bytecode.
  * Compatible with the D11cRemovableWriter contract.
- * @author vkonst (https://github.com/vkonst/D11cSstore2)
+ * @author vkonst (https://github.com/vkonst/D11cStorage)
  * @author Reworked from Solmate (https://github.com/transmissions11/solmate/blob/main/src/utils/SSTORE2.sol)
  * @author Originated from 0xSequence (https://github.com/0xSequence/sstore2/blob/master/contracts/SSTORE2.sol)
  * @dev Data is read via EXTCODECOPY opcodes at a fraction of gas cost that SLOAD may take.

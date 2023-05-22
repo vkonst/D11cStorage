@@ -7,7 +7,7 @@ import "./core/D11cBytecodeWriter.sol";
  * @notice Deploy immutable data as bytecode at a deterministic (abbreviated as "D11c") address.
  * It may save gas cost writing/reading to/from the contract storage would take.
  * The EoA that deploys data (the "owner") may remove (but not update) the data.
- * @author vkonst (https://github.com/vkonst/D11cSstore2)
+ * @author vkonst (https://github.com/vkonst/D11cStorage)
  * @author Originated from Solmate (https://github.com/transmissions11/solmate/blob/main/src/utils/SSTORE2.sol)
  * @dev Data is written as via CREATE2 and read via EXTCODECOPY opcodes.
  * The deployed data address on any network is deterministically defined by the data only.

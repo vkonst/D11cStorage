@@ -3,7 +3,7 @@ pragma solidity >=0.8.0;
 
 /**
  * @notice Read deployed bytecode.
- * @author vkonst (https://github.com/vkonst/D11cSstore2)
+ * @author vkonst (https://github.com/vkonst/D11cStorage)
  * @author Originated from Solmate (https://github.com/transmissions11/solmate/blob/main/src/utils/SSTORE2.sol)
  */
 abstract contract BytecodeReader {
